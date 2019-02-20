@@ -1,9 +1,9 @@
 {
-  "name": "cybercraft-gmbh-localizer-across",
-  "description": "Across API for the TYPO3 localizer",
+  "name": "localizationteam-localizer-supertext",
+  "description": "Supertext API for the TYPO3 localizer",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/cybercraft.jh/localizer_across"
+    "url": "https://gitlab.com/cybercraft.jh/localizer_supertext"
   },
   "homepage": "https://cybercraft.gmbh",
   "author": "Jo Hasenau",
