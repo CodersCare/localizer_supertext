@@ -120,7 +120,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 '/' . urlencode($this->password)
             );
             $content = json_decode(curl_exec($curl));
-            $this->checkResponse($curl, $content);
+            $this->checkResponse($curl, $content, 'connect');
             $this->token = null;
             if ($content->Token === $this->projectKey) {
                 $this->token = $this->projectKey;
@@ -150,9 +150,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * @param resource $curl
      * @param string $content
+     * @param string $methodName
      * @throws \Exception
      */
-    private function checkResponse($curl, $content)
+    private function checkResponse($curl, $content, $methodName = '')
     {
         $http_status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $this->lastError = '';
@@ -166,11 +167,15 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $details['curl_error'] = curl_error($curl);
             }
 
-            $this->lastError = $details['message'];
+            $this->lastError = $content;
 
             throw new \Exception('Communication error with the Supertext-Server, see the details : (' . var_export($details,
+                    true) . ') and see the curl object : (' . var_export($curl,
+                    true) . ') and see the content : (' . var_export($content,
+                    true) . ') and see the calling method : (' . var_export($methodName,
                     true) . ')');
         }
+
     }
 
     /**
@@ -244,7 +249,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             );
             $content = curl_exec($curl);
 
-            $this->checkResponse($curl, $content);
+            $this->checkResponse($curl, $content, 'getProjectInformation');
             $this->projectInformation = $content;
         }
 
@@ -332,7 +337,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'deleteFile');
     }
 
     /**
@@ -396,7 +401,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'getWorkProgress');
         return json_decode($content, true);
     }
 
@@ -424,7 +429,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         );
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'getFile');
 
         return $content;
     }
@@ -449,7 +454,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         curl_setopt($curl, CURLOPT_PUT, 1);
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'scanFiles');
     }
 
     /**
@@ -472,7 +477,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         );
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'scanRequired');
 
         $array = json_decode($content, true);
         if (is_array($array) && isset($array['scanRequired'])) {
@@ -512,7 +517,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'sandBoxClear');
 
     }
 
@@ -544,9 +549,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL,
             $this->url .
-            '/api/files/file?token=' . urlencode($this->token) .
-            '&locale=' . $source .
-            '&filename=' . urlencode($fileName)
+            'files/files'
         );
         curl_setopt($curl, CURLOPT_PUT, 1);
         curl_setopt($curl, CURLOPT_INFILE, $fh);
@@ -555,7 +558,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         fclose($fh);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'sendFile');
     }
 
     /**
@@ -591,7 +594,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         curl_setopt($curl, CURLOPT_PUT, 1);
         $operationId = curl_exec($curl);
 
-        $this->checkResponse($curl, $operationId);
+        $this->checkResponse($curl, $operationId, 'sandboxRequestCostAndCounts');
 
 
         return $operationId;
@@ -618,7 +621,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         );
         $content = curl_exec($curl);
 
-        $this->checkResponse($curl, $content);
+        $this->checkResponse($curl, $content, 'sandboxGetAsynchronousCostAndCountsResult');
 
         return $content;
     }
@@ -657,7 +660,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
             $content = curl_exec($curl);
 
-            $this->checkResponse($curl, $content);
+            $this->checkResponse($curl, $content, 'sandboxCommitContent');
         }
     }
 
