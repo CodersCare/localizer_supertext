@@ -5,7 +5,10 @@
             <authorName>Jo Hasenau</authorName>
             <authorEmail>info@cybercraft.de</authorEmail>
         </header>
-        <body>
-        </body>
+		<body>
+			<trans-unit id="tx_localizer_settings.type.I.localizer_supertext">
+				<source>External Server with Supertext-API</source>
+			</trans-unit>
+		</body>
     </file>
 </xliff>
