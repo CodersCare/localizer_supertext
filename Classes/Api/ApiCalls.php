@@ -2,7 +2,16 @@
 
 namespace Localizationteam\LocalizerSupertext\Api;
 
-use DateTime;
+use Localizationteam\Localizer\Constants;
+use ScssPhp\ScssPhp\Formatter\Debug;
+use stdClass;
+use TYPO3\CMS\Core\Crypto\PasswordHashing\Md5PasswordHash;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Http\RequestFactory;
+use TYPO3\CMS\Core\Utility\DebugUtility;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\VersionNumberUtility;
 
 /**
  * ApiCalls Class used to make calls to the Localizer API
@@ -14,6 +23,11 @@ use DateTime;
  */
 class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 {
+    /**
+     * @var int
+     */
+    protected $uid;
+
     /**
      * @var string
      */
@@ -38,11 +52,13 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         $workflow = '',
         $projectKey = '',
         $username = '',
-        $password = ''
+        $password = '',
+        $uid = ''
     ) {
         parent::__construct($type);
-        $this->connectorName = 'Supertext Connector';
-        $this->connectorVersion = '9.0.0';
+        $this->connectorName = 'Localizer Supertext Connector';
+        $this->connectorVersion = ExtensionManagementUtility::getExtensionVersion('localizer_supertext');
+        $this->uid = (int)$uid;
         $this->setUrl($url);
         $this->setWorkflow($workflow);
         $this->setProjectKey($projectKey);
@@ -86,7 +102,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
     public function disconnect()
     {
-
         if (!$this->isConnected()) {
             return;
         }
@@ -103,34 +118,31 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     public function connect()
     {
         if ($this->doesLocalizerExist()) {
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 20);
-            curl_setopt($curl, CURLOPT_TIMEOUT, 15);
-            curl_setopt($curl, CURLOPT_USERAGENT, 'TYPO3-Supertext-Plugin/HTTP');
-            curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json; charset=UTF-8',
-                'Accept-Language: ' . $this->communicationLanguage
-            ));
-            curl_setopt($curl, CURLOPT_URL,
-                $this->url .
-                'authenticate/' . urlencode($this->username) .
-                '/' . urlencode($this->password)
+            /** @var RequestFactory $requestFactory */
+            $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+            $request = $requestFactory->request(
+                $this->url . '/v1/accountcheck',
+                'GET',
+                [
+                    'headers' => [
+                        'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Content-Type' => 'text/json',
+                    ]
+                ]
             );
-            $content = json_decode(curl_exec($curl));
-            $this->checkResponse($curl, $content, 'connect');
-            $this->token = null;
-            if ($content->Token === $this->projectKey) {
-                $this->token = $this->projectKey;
-                $this->customerId = $content->UserId;
+            if ($request->getStatusCode() === 200) {
+                $content = json_decode($request->getBody(), true);
+                if ($content) {
+                    $this->setToken($this->projectKey);
+                }
             }
             return $this->isConnected();
         } else {
-            throw new \Exception('No Supertext-Server found at given URL ' . $this->url . '. Either the URL is wrong or Supertext-Server is not active!');
+            throw new \Exception(
+                'No Supertext-Server found at given URL ' . $this->url . '. Either the URL is wrong or Supertext-Server is not active!'
+            );
         }
-
     }
 
     /**
@@ -139,7 +151,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     public function doesLocalizerExist()
     {
         $doesExist = false;
-        $response = file_get_contents($this->url . '/servertest');
+        $response = file_get_contents($this->url . '/v1/servertest');
         if ($response !== '') {
             $timeStamp = strtotime(json_decode($response));
             $doesExist = $timeStamp > 0 && $timeStamp <= time();
@@ -169,13 +181,22 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
             $this->lastError = $content;
 
-            throw new \Exception('Communication error with the Supertext-Server, see the details : (' . var_export($details,
-                    true) . ') and see the curl object : (' . var_export($curl,
-                    true) . ') and see the content : (' . var_export($content,
-                    true) . ') and see the calling method : (' . var_export($methodName,
-                    true) . ')');
+            throw new \Exception(
+                'Communication error with the Supertext-Server, see the details : (' . var_export(
+                    $details,
+                    true
+                ) . ') and see the curl object : (' . var_export(
+                    $curl,
+                    true
+                ) . ') and see the content : (' . var_export(
+                    $content,
+                    true
+                ) . ') and see the calling method : (' . var_export(
+                    $methodName,
+                    true
+                ) . ')'
+            );
         }
-
     }
 
     /**
@@ -189,8 +210,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if (isset($projectLanguages[$sourceLanguage])) {
                 $this->sourceLanguage = $sourceLanguage;
             } else {
-                throw new \Exception('Source language ' . $sourceLanguage . ' not specified for this project ' .
-                    $this->projectKey . '. Allowed ' . join(' ', array_keys($projectLanguages)));
+                throw new \Exception(
+                    'Source language ' . $sourceLanguage . ' not specified for this project ' .
+                    $this->projectKey . '. Allowed ' . join(' ', array_keys($projectLanguages))
+                );
             }
         }
     }
@@ -207,14 +230,14 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     public function getProjectLanguages()
     {
         if ($this->projectLanguages === null) {
-
             $array = $this->getProjectInformation();
             $target = [];
-            foreach ($array['targetLocales'] as $num => $targetLocale) {
-                $target[$targetLocale] = 1;
+            if (is_array($array['targetLocales'])) {
+                foreach ($array['targetLocales'] as $num => $targetLocale) {
+                    $target[$targetLocale] = 1;
+                }
+                $this->projectLanguages[$array['sourceLocale']] = $target;
             }
-            $this->projectLanguages[$array['sourceLocale']] = $target;
-
         }
         return $this->projectLanguages;
     }
@@ -231,28 +254,60 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $this->connect();
             }
 
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 20);
-            curl_setopt($curl, CURLOPT_TIMEOUT, 15);
-            curl_setopt($curl, CURLOPT_USERAGENT, 'TYPO3-Supertext-Plugin/HTTP');
-            curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json; charset=UTF-8',
-                'Accept-Language: ' . $this->communicationLanguage
-            ));
-            curl_setopt($curl, CURLOPT_USERPWD, $this->username . ':' . $this->token);
-            curl_setopt($curl, CURLOPT_URL,
-                $this->url .
-                '/admin/projectmanager/' . $this->customerId
+            /** @var RequestFactory $requestFactory */
+            $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+            $request = $requestFactory->request(
+                $this->url . '/v1/accountcheck',
+                'GET',
+                [
+                    'headers' => [
+                        'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Content-Type' => 'text/json',
+                    ],
+                    'api_username' => $this->username,
+                    'api_token' => $this->projectKey
+                ]
             );
-            $content = curl_exec($curl);
+            if ($request->getStatusCode() === 200) {
+                DebugUtility::debug($request);
+                if (strpos($request->getHeaderLine('Content-Type'), 'application/json') === 0) {
+                    $this->content = json_decode($request->getBody(), true);
+                    foreach ($this->content['data'] as $key => $data) {
+                        DebugUtility::debug($data);
+                    }
+                }
+                return true;
+            }
 
-            $this->checkResponse($curl, $content, 'getProjectInformation');
-            $this->projectInformation = $content;
+            $this->projectInformation = $this->content;
         }
 
+        /** @var RequestFactory $requestFactory */
+        $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+        $request = $requestFactory->request(
+            $this->url . '/v1/accountcheck',
+            'GET',
+            [
+                'headers' => [
+                    'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                    'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                    'Content-Type' => 'text/json',
+                ],
+                'api_username' => $this->username,
+                'api_token' => $this->projectKey
+            ]
+        );
+        if ($request->getStatusCode() === 200) {
+            DebugUtility::debug($request);
+            if (strpos($request->getHeaderLine('Content-Type'), 'application/json') === 0) {
+                $this->content = json_decode($request->getBody(), true);
+                foreach ($this->content['data'] as $key => $data) {
+                    DebugUtility::debug($data);
+                }
+            }
+            return true;
+        }
         return $asJson === true ? $this->projectInformation : json_decode($this->projectInformation, true);
     }
 
@@ -283,8 +338,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if (isset($projectLanguages[$sourceLanguage][$locale])) {
                 $validateLocales[] = $locale;
             } else {
-                throw new \Exception($locale . ' not defined for this project ' . $this->projectKey
-                    . '. Available locales ' . join(' ', array_keys($projectLanguages[$sourceLanguage])));
+                throw new \Exception(
+                    $locale . ' not defined for this project ' . $this->projectKey
+                    . '. Available locales ' . join(' ', array_keys($projectLanguages[$sourceLanguage]))
+                );
             }
         }
 
@@ -306,8 +363,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if (count($sourceLanguages) === 1) {
                 $this->sourceLanguage = $sourceLanguages[0];
             } else {
-                throw new \Exception('For this project ' . $this->projectKey
-                    . ' is more than one source language available. Please specify ' . join(' ', $sourceLanguages));
+                throw new \Exception(
+                    'For this project ' . $this->projectKey
+                    . ' is more than one source language available. Please specify ' . join(' ', $sourceLanguages)
+                );
             }
         }
 
@@ -328,7 +387,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         }
 
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/files/file?token=' . urlencode($this->token) .
             '&locale=' . $source . '&filename=' . urlencode($filename) .
@@ -359,7 +420,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         }
 
         $query = [
-            'token'  => $this->token,
+            'token' => $this->token,
             'filter' => [],
         ];
 
@@ -390,7 +451,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         }
         $json = json_encode($query);
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/workprogress/translatedfiles'
         );
@@ -421,7 +484,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/files/file?token=' . urlencode($this->token) .
             '&locale=&folder=' . urlencode($folder) .
@@ -447,7 +512,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/files/operations/scan?token=' . urlencode($this->token)
         );
@@ -471,7 +538,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/files/status?token=' . urlencode($this->token)
         );
@@ -511,14 +580,15 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $url .= '&directoryname=' . urlencode((string)$directoryName);
         }
 
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $url
         );
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         $content = curl_exec($curl);
 
         $this->checkResponse($curl, $content, 'sandBoxClear');
-
     }
 
     /**
@@ -536,29 +606,92 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $this->connect();
         }
 
-        if ($attachInstruction === true) {
+        /*if ($attachInstruction === true) {
             $this->sendInstructions($fileName, $source);
-        }
+        }*/
 
         $fh = fopen('php://temp/maxmemory:256000', 'w');
         if ($fh) {
             fwrite($fh, $fileContent);
         }
 
-        fseek($fh, 0);
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL,
-            $this->url .
-            'files/files'
+        /** @var RequestFactory $requestFactory */
+        $fileRequestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+        $fileRequest = $fileRequestFactory->request(
+            $this->url . '/v1/files/files',
+            'POST',
+            [
+                'headers' => [
+                    'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                    'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                ],
+                'multipart' => [
+                    [
+                        'Content-type' => 'multipart/form-data',
+                        'name' => 'file',
+                        'contents' => $fh,
+                        'filename' => $fileName,
+                    ],
+                    [ 'name' => 'ElementId', 'contents' => 0 ],
+                    [ 'name' => 'ElementTypeId', 'contents' => 2],
+                    [ 'name' => 'DocumentTypeId', 'contents' => 1]
+                ]
+            ]
         );
-        curl_setopt($curl, CURLOPT_PUT, 1);
-        curl_setopt($curl, CURLOPT_INFILE, $fh);
-        curl_setopt($curl, CURLOPT_INFILESIZE, strlen($fileContent));
-        $content = curl_exec($curl);
-
-        fclose($fh);
-
-        $this->checkResponse($curl, $content, 'sendFile');
+        if ($fileRequest->getStatusCode() === 200) {
+            $fileContent = json_decode($fileRequest->getBody(), true)[0];
+            $fileId = (int)$fileContent['Id'];
+            if ($fileId > 0) {
+                $orderRequestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+                $referenceData = GeneralUtility::makeInstance(Md5PasswordHash::class)->getHashedPassword($fileId);
+                $options = [
+                    'CallbackUrl' => 'none yet',
+                    'ContentType' => 'text\/html',
+                    'DeliveryId' => 1,
+                    'OrderName' => $fileName,
+                    'OrderTypeId' => 6,
+                    'ReferenceData' => $referenceData,
+                    'SystemName' => 'TYPO3',
+                    'SystemVersion' => VersionNumberUtility::getCurrentTypo3Version(),
+                    'ComponentName' => $this->connectorName,
+                    'ComponentVersion' => $this->connectorVersion,
+                    'SourceLang' => $source,
+                    'TargetLanguages' => $this->locales,
+                    'Files' => [
+                        [
+                            'Id' => $fileId,
+                            'Comment' => 'Comment'
+                        ]
+                    ]
+                ];
+                $orderRequest = $orderRequestFactory->request(
+                    $this->url . '/v1.1/translation/order',
+                    'POST',
+                    [
+                        'headers' => [
+                            'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                            'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                            'Content-Type' => 'text/json',
+                        ],
+                        'body' => json_encode($options)
+                    ]
+                );
+                $orderContent = json_decode($orderRequest->getBody(), true)[0];
+                $orderId = (int)$orderContent['Id'];
+                if ($orderId > 0 && $orderContent['ReferenceData'] === $referenceData) {
+                    DebugUtility::debug($orderContent);
+                    $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
+                    $queryBuilder
+                        ->update(CONSTANTS::TABLE_EXPORTDATA_MM, 'export')
+                        ->where(
+                            $queryBuilder->expr()->eq('export.uid', $queryBuilder->createNamedParameter($this->uid))
+                        )
+                        ->set('export.processid', $referenceData)
+                        ->set('export.response', $orderId)
+                        ->execute();
+                }
+            }
+        }
     }
 
     /**
@@ -579,14 +712,15 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      */
     public function sandboxRequestCostAndCounts($includeCost = false)
     {
-
         if (!$this->isConnected()) {
             $this->connect();
         }
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/files/operations/sandbox/count?token=' . urlencode($this->token) .
             '&getcost=' . ($includeCost === true ? 'true' : 'false')
@@ -614,7 +748,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_URL,
+        curl_setopt(
+            $curl,
+            CURLOPT_URL,
             $this->url .
             '/api/async/operation/status?token=' . urlencode($this->token) .
             '&opid=' . $operationId
@@ -633,7 +769,8 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     public function sandboxCommitContent()
     {
         if ($this->isAlignSet()) {
-            throw new \Exception('Sandbox alignment limitation. ' .
+            throw new \Exception(
+                'Sandbox alignment limitation. ' .
                 'Clear the sandbox and copy source content, instructions and translated content again to the Supertext-Server. ' .
                 'For further information read http://documents.wordbee.com/display/bb/API+-+Sandbox+-+Commit+content'
             );
@@ -642,14 +779,16 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $this->connect();
             }
             $content = [
-                'token'   => $this->token,
+                'token' => $this->token,
                 'locale1' => 'sandbox',
                 'locale2' => $this->getSourceLanguage(),
             ];
             $json = json_encode($content);
 
             $curl = curl_init();
-            curl_setopt($curl, CURLOPT_URL,
+            curl_setopt(
+                $curl,
+                CURLOPT_URL,
                 $this->url .
                 '/api/files/copy'
             );

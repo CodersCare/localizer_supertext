@@ -61,16 +61,15 @@ class DataHandler
                             $fieldArray['hidden'] = 1;
                         } else {
                             $fieldArray['hidden'] = 0;
-                            $fieldArray['project_settings'] = $localizerApi->getProjectInformation(true);
+                            $fieldArray['project_settings'] = 'Localizer settings [' . $checkArray['title'] . '] successfully validated and saved';
                             $fieldArray['last_error'] = '';
                             new FlashMessage('Localizer settings [' . $checkArray['title'] . '] successfully validated and saved',
                                 'Success', 0);
                         }
                     } catch (\Exception $e) {
-                        DebugUtility::debug($localizerApi->getProjectInformation(true));
-                        $fieldArray['last_error'] = $localizerApi->getLastError();
                         $fieldArray['hidden'] = 1;
-                        $fieldArray['project_settings'] = '';
+                        $fieldArray['project_settings'] = 'Localizer settings [' . $checkArray['title'] . '] set to hidden';
+                        $fieldArray['last_error'] = $e->getCode() . ' # ' . $e->getMessage();
                         new FlashMessage($e->getMessage());
                         new FlashMessage('Localizer settings [' . $checkArray['title'] . '] set to hidden', 'Error', 1);
                     }
