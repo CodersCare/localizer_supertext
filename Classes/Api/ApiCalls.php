@@ -3,10 +3,11 @@
 namespace Localizationteam\LocalizerSupertext\Api;
 
 use Localizationteam\Localizer\Constants;
-use ScssPhp\ScssPhp\Formatter\Debug;
-use stdClass;
+use PDO;
 use TYPO3\CMS\Core\Crypto\PasswordHashing\Md5PasswordHash;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Utility\DebugUtility;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -270,12 +271,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 ]
             );
             if ($request->getStatusCode() === 200) {
-                DebugUtility::debug($request);
                 if (strpos($request->getHeaderLine('Content-Type'), 'application/json') === 0) {
                     $this->content = json_decode($request->getBody(), true);
-                    foreach ($this->content['data'] as $key => $data) {
+                    /*foreach ($this->content['data'] as $key => $data) {
                         DebugUtility::debug($data);
-                    }
+                    }*/
                 }
                 return true;
             }
@@ -299,12 +299,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             ]
         );
         if ($request->getStatusCode() === 200) {
-            DebugUtility::debug($request);
             if (strpos($request->getHeaderLine('Content-Type'), 'application/json') === 0) {
                 $this->content = json_decode($request->getBody(), true);
-                foreach ($this->content['data'] as $key => $data) {
+                /*foreach ($this->content['data'] as $key => $data) {
                     DebugUtility::debug($data);
-                }
+                }*/
             }
             return true;
         }
@@ -402,7 +401,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     }
 
     /**
-     * Retrieves work progress of the Supertext-Server for the specified files, if no file specified it will retrieve every file
+     * Retrieves work progress of the Supertext-Server for the specified files
      *
      * @param mixed $files Can be an array containing a list of file-names or false if you do no want to filter
      * (false by default)
@@ -415,57 +414,60 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      */
     public function getWorkProgress($files = false, $skip = null, $count = null)
     {
+        $response = [];
+
         if (!$this->isConnected()) {
             $this->connect();
         }
+        /** @var $queryBuilder QueryBuilder */
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
 
-        $query = [
-            'token' => $this->token,
-            'filter' => [],
-        ];
+        /** @var $deletedRestriction DeletedRestriction */
+        $deletedRestriction = GeneralUtility::makeInstance(DeletedRestriction::class);
 
-        if (is_array($files)) {
-            $query['filter']['filePaths'] = [];
-            foreach ($files as $file) {
-                if ($file !== '') {
-                    $query['filter']['filePaths'][] = [
-                        'Item1' => '',
-                        'Item2' => $file,
+        $queryBuilder->getRestrictions()
+            ->removeAll()
+            ->add($deletedRestriction);
+
+        $cart = $queryBuilder->select('*')
+            ->from(CONSTANTS::TABLE_EXPORTDATA_MM)
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($this->uid, PDO::PARAM_INT))
+            )
+            ->setMaxResults(1)
+            ->execute()
+            ->fetch();
+
+        if (!empty($cart) && !empty($cart['supertextid'])) {
+            /** @var RequestFactory $requestFactory */
+            $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+            $request = $requestFactory->request(
+                $this->url . '/v1/order/' . $cart['supertextid'],
+                'GET',
+                [
+                    'headers' => [
+                        'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Content-Type' => 'text/json',
+                    ],
+                    'api_username' => $this->username,
+                    'api_token' => $this->projectKey
+                ]
+            );
+            if ($request->getStatusCode() === 200) {
+                $content = json_decode($request->getBody(), true);
+                if ($content['Status'] === 'Delivered') {
+                    $response['files'] = [
+                        [
+                            'status' => Constants::API_TRANSLATION_STATUS_TRANSLATED,
+                            'file' => $files[0],
+                        ],
                     ];
                 }
             }
-            if (empty($query['filter']['filePaths'])) {
-                unset($query['filter']['filePaths']);
-            }
         }
-
-        if ($skip !== null) {
-            if ($skip > 0) {
-                $query['skip'] = (int)$skip;
-            }
-        }
-        if ($count !== null) {
-            if ($count > 0) {
-                $query['count'] = (int)$count;
-            }
-        }
-        $json = json_encode($query);
-        $curl = curl_init();
-        curl_setopt(
-            $curl,
-            CURLOPT_URL,
-            $this->url .
-            '/api/workprogress/translatedfiles'
-        );
-
-        curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
-        $content = curl_exec($curl);
-
-        $this->checkResponse($curl, $content, 'getWorkProgress');
-        return json_decode($content, true);
+        return $response;
     }
 
     /**
@@ -643,7 +645,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $fileId = (int)$fileContent['Id'];
             if ($fileId > 0) {
                 $orderRequestFactory = GeneralUtility::makeInstance(RequestFactory::class);
-                $referenceData = GeneralUtility::makeInstance(Md5PasswordHash::class)->getHashedPassword($fileId);
+                $referenceData = substr(GeneralUtility::makeInstance(Md5PasswordHash::class)->getHashedPassword($fileId), 0, 32);
                 $options = [
                     'CallbackUrl' => 'none yet',
                     'ContentType' => 'text\/html',
@@ -679,15 +681,14 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $orderContent = json_decode($orderRequest->getBody(), true)[0];
                 $orderId = (int)$orderContent['Id'];
                 if ($orderId > 0 && $orderContent['ReferenceData'] === $referenceData) {
-                    DebugUtility::debug($orderContent);
                     $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
                     $queryBuilder
                         ->update(CONSTANTS::TABLE_EXPORTDATA_MM, 'export')
                         ->where(
                             $queryBuilder->expr()->eq('export.uid', $queryBuilder->createNamedParameter($this->uid))
                         )
-                        ->set('export.processid', $referenceData)
-                        ->set('export.response', $orderId)
+                        ->set('export.identifier', $referenceData)
+                        ->set('export.supertextid', $orderId)
                         ->execute();
                 }
             }
