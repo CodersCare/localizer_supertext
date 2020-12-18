@@ -6,10 +6,9 @@ use Localizationteam\Localizer\Constants;
 use PDO;
 use TYPO3\CMS\Core\Crypto\PasswordHashing\Md5PasswordHash;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\RequestFactory;
-use TYPO3\CMS\Core\Utility\DebugUtility;
+use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\VersionNumberUtility;
@@ -119,7 +118,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     public function connect()
     {
         if ($this->doesLocalizerExist()) {
-            /** @var RequestFactory $requestFactory */
             $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
             $request = $requestFactory->request(
                 $this->url . '/v1/accountcheck',
@@ -255,7 +253,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $this->connect();
             }
 
-            /** @var RequestFactory $requestFactory */
             $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
             $request = $requestFactory->request(
                 $this->url . '/v1/accountcheck',
@@ -283,7 +280,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $this->projectInformation = $this->content;
         }
 
-        /** @var RequestFactory $requestFactory */
         $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
         $request = $requestFactory->request(
             $this->url . '/v1/accountcheck',
@@ -419,11 +415,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         if (!$this->isConnected()) {
             $this->connect();
         }
-        /** @var $queryBuilder QueryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
 
-        /** @var $deletedRestriction DeletedRestriction */
         $deletedRestriction = GeneralUtility::makeInstance(DeletedRestriction::class);
 
         $queryBuilder->getRestrictions()
@@ -440,7 +434,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             ->fetch();
 
         if (!empty($cart) && !empty($cart['supertextid'])) {
-            /** @var RequestFactory $requestFactory */
             $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
             $request = $requestFactory->request(
                 $this->url . '/v1/order/' . $cart['supertextid'],
@@ -458,10 +451,17 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if ($request->getStatusCode() === 200) {
                 $content = json_decode($request->getBody(), true);
                 if ($content['Status'] === 'Delivered') {
+                    if ($content['Files']) {
+                        foreach ($content['Files'] as $file) {
+                            if ($file['DocumentType'] === 'Final') {
+                                $finalFile = $file['Id'] . '/' . $file['Name'];
+                            }
+                        }
+                    }
                     $response['files'] = [
                         [
                             'status' => Constants::API_TRANSLATION_STATUS_TRANSLATED,
-                            'file' => $files[0],
+                            'file' => $finalFile,
                         ],
                     ];
                 }
@@ -484,20 +484,32 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $this->connect();
         }
 
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(
-            $curl,
-            CURLOPT_URL,
-            $this->url .
-            '/api/files/file?token=' . urlencode($this->token) .
-            '&locale=&folder=' . urlencode($folder) .
-            '&filename=' . urlencode($filename)
-        );
-        $content = curl_exec($curl);
+        $content = '';
 
-        $this->checkResponse($curl, $content, 'getFile');
+        $folder = GeneralUtility::trimExplode('\\', $folder);
+        $folder = $folder[1];
 
+        if (!empty($filename) && !empty($folder)) {
+            /** @var $requestFactory RequestFactory **/
+            $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+            /** @var $fileRequest Response **/
+            $fileRequest = $requestFactory->request(
+                str_replace('/api', '', $this->url) . '/FileDownloads/File/' . $folder . '/' . $filename,
+                'GET',
+                [
+                    'headers' => [
+                        'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Content-Type' => 'text/json',
+                    ],
+                    'api_username' => $this->username,
+                    'api_token' => $this->projectKey
+                ]
+            );
+            if ($fileRequest->getStatusCode() === 200) {
+                $content = (string) $fileRequest->getBody();
+            }
+        }
         return $content;
     }
 
@@ -617,7 +629,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             fwrite($fh, $fileContent);
         }
 
-        /** @var RequestFactory $requestFactory */
         $fileRequestFactory = GeneralUtility::makeInstance(RequestFactory::class);
         $fileRequest = $fileRequestFactory->request(
             $this->url . '/v1/files/files',
