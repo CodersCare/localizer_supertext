@@ -66,7 +66,6 @@ The Localizer Supertext plugin provides an additional connector for the basic Lo
    Editor/Index
    Installation/Index
    Configuration/Index
-   Developer/Index
    KnownProblems/Index
    Sitemap
 
