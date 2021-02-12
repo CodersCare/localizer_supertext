@@ -42,9 +42,6 @@ The Supertext Localizer plugin for the Localizer provides you with the type "Uni
 Additionally you will always get the original type "Universal FTP hot folders", which provides you with a simple local hot folder on your webserver to exchange files with services other than Supertext.
 To configure the different types, you have to fill in the following fields.
 
-Common-Settings
-===============
-
 .. _ServerType:
 
 Server Type
@@ -59,6 +56,119 @@ Server Type
          If you want to make use of the automated Supertext Localizer workflow, you have to select the server type "External Server with Supertext-API" here. This will change the available configuration fields accordingly.
 
 .. _Title:
+
+
+Specific settings for the server type "External Server with Supertext-API"
+==========================================================================
+
+.. _TranslationServerUrl:
+
+Translation Server URL
+""""""""""""""""""""""
+.. container:: table-row
+
+   Property
+         The URL of the server running the Supertext-API
+   Data type
+         string (mandatory)
+   Description
+         This is the URL of the server running the Supertext-API. If it is not set or the connection can't be established, the record will be disabled automatically..
+
+.. important::
+    Make sure you have proper access to external URLs on your server, otherwise the connection to the API might fail.
+
+.. _TranslationServerUsername:
+
+Translation Server Username
+""""""""""""""""""""""
+.. container:: table-row
+
+   Property
+         The username to log in to the server running the Supertext-API
+   Data type
+         string (mandatory)
+   Description
+         This is the username of the account on the server running the Supertext-API. If it is not set or if it is misspelled, the record will be disabled automatically..
+
+.. _TranslationServerPassword:
+
+Translation Server URL
+""""""""""""""""""""""
+.. container:: table-row
+
+   Property
+         The password to log in to the server running the Supertext-API
+   Data type
+         string (mandatory)
+   Description
+         This is the password of the account on the server running the Supertext-API. If it is not set or if it is misspelled, the record will be disabled automatically..
+
+.. _ProjectKey:
+
+Project Key
+"""""""""""
+.. container:: table-row
+
+   Property
+         The Supertext-API token
+   Data type
+         string (mandatory)
+   Description
+         This is the Supertext-APi token of the account on the server running the Supertext-API. If it is not set or if it is misspelled, the record will be disabled automatically..
+.. important::
+    Since this token can be regenerated on the Supertext server, make sure you have saved the current token here, otherwise the connection to the API might fail.
+
+
+Specific settings for the server type "Hotfolder"
+=================================================
+
+.. _PathToOutgoingHotFolder:
+
+Path to outgoing hot folder
+"""""""""""""""""""""""""""
+.. container:: table-row
+
+   Property
+         Path to outgoing hot folder
+   Data type
+         string (mandatory)
+   Description
+         This is the path to the outgoing hot folder relative to your web root. If it is not set, the record will be disabled automatically. If it does not exist yet, it will be created during on save.
+
+.. important::
+    Make sure you have proper read and write access to that path, otherwise the creation of the folder or the export files might fail.
+
+.. _PathToIncomingHotFolder:
+
+Path to incoming hot folder
+"""""""""""""""""""""""""""
+.. container:: table-row
+
+   Property
+         Path to incoming hot folder
+   Data type
+         string (mandatory)
+   Description
+         This is the path to the incoming hot folder relative to your web root. If it is not set, the record will be disabled automatically. If it does not exist yet, it will be created during on save.
+
+.. important::
+    Make sure you have proper read and write access to that path, otherwise the creation of the folder or the import files might fail.
+
+.. _Workflow:
+
+Workflow
+""""""""
+.. container:: table-row
+
+   Property
+         Workflow
+   Data type
+         string (optional)
+   Description
+         Additional information for the translation service provider, which of the predefined workflows within the translation process should be used. This will be written into an additional instruction.xml file sent together with the L10nmgr export.
+
+Common-Settings
+===============
 
 Title
 """""
@@ -181,113 +291,4 @@ Target Language
 .. important::
     Make sure each of the language records has been configured with the necessary locales to distinguish between languages during the translations process.
 
-
-Specific settings for the server type "External Server with Supertext-API"
-==========================================================================
-
-.. _TranslationServerUrl:
-
-Translation Server URL
-""""""""""""""""""""""
-.. container:: table-row
-
-   Property
-         The URL of the server running the Supertext-API
-   Data type
-         string (mandatory)
-   Description
-         This is the URL of the server running the Supertext-API. If it is not set or the connection can't be established, the record will be disabled automatically..
-
-.. important::
-    Make sure you have proper access to external URLs on your server, otherwise the connection to the API might fail.
-
-.. _TranslationServerUsername:
-
-Translation Server Username
-""""""""""""""""""""""
-.. container:: table-row
-
-   Property
-         The username to log in to the server running the Supertext-API
-   Data type
-         string (mandatory)
-   Description
-         This is the username of the account on the server running the Supertext-API. If it is not set or if it is misspelled, the record will be disabled automatically..
-
-.. _TranslationServerPassword:
-
-Translation Server URL
-""""""""""""""""""""""
-.. container:: table-row
-
-   Property
-         The password to log in to the server running the Supertext-API
-   Data type
-         string (mandatory)
-   Description
-         This is the password of the account on the server running the Supertext-API. If it is not set or if it is misspelled, the record will be disabled automatically..
-
-.. _ProjectKey:
-
-Project Key
-"""""""""""
-.. container:: table-row
-
-   Property
-         The Supertext-API token
-   Data type
-         string (mandatory)
-   Description
-         This is the Supertext-APi token of the account on the server running the Supertext-API. If it is not set or if it is misspelled, the record will be disabled automatically..
-.. important::
-    Since this token can be regenerated on the Supertext server, make sure you have saved the current token here, otherwise the connection to the API might fail.
-
-
-Specific settings for the server type "Hotfolder"
-=================================================
-
-.. _PathToOutgoingHotFolder:
-
-Path to outgoing hot folder
-"""""""""""""""""""""""""""
-.. container:: table-row
-
-   Property
-         Path to outgoing hot folder
-   Data type
-         string (mandatory)
-   Description
-         This is the path to the outgoing hot folder relative to your web root. If it is not set, the record will be disabled automatically. If it does not exist yet, it will be created during on save.
-
-.. important::
-    Make sure you have proper read and write access to that path, otherwise the creation of the folder or the export files might fail.
-
-.. _PathToIncomingHotFolder:
-
-Path to incoming hot folder
-"""""""""""""""""""""""""""
-.. container:: table-row
-
-   Property
-         Path to incoming hot folder
-   Data type
-         string (mandatory)
-   Description
-         This is the path to the incoming hot folder relative to your web root. If it is not set, the record will be disabled automatically. If it does not exist yet, it will be created during on save.
-
-.. important::
-    Make sure you have proper read and write access to that path, otherwise the creation of the folder or the import files might fail.
-
-.. _Workflow:
-
-Workflow
-""""""""
-.. container:: table-row
-
-   Property
-         Workflow
-   Data type
-         string (optional)
-   Description
-         Additional information for the translation service provider, which of the predefined workflows within the translation process should be used. This will be written into an additional instruction.xml file sent together with the L10nmgr export.
 
