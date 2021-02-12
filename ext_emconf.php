@@ -3,7 +3,7 @@
 /**
  * Extension Manager/Repository config file for ext "localizer_supertext".
  */
-$EM_CONF[$_EXTKEY] = [
+$EM_CONF['localizer_supertext'] = [
     'title' => 'Localizer Supertext',
     'description' => 'Supertext API for the TYPO3 localizer',
     'category' => 'templates',
