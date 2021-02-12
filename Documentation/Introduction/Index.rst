@@ -32,7 +32,10 @@ That way you can have Supertext as an additional translation service provider wi
    :alt: Supertext
    :width: 300px
 
-   Localizer Selector
+   Supertext AG <https://www.supertext.ch/>
+   Hardturmstrasse 253
+   CH-8005 Zurich
+   Phone: +41 43 500 33 80
 
 .. _screenshots:
 
