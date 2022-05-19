@@ -6,7 +6,6 @@ use Localizationteam\Localizer\Constants;
 use Localizationteam\Localizer\Language;
 use Localizationteam\LocalizerSupertext\Api\ApiCalls;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Core\Utility\DebugUtility;
 
 /**
  * DataHandler $COMMENT$
@@ -30,12 +29,13 @@ class DataHandler
      * @param int $id
      * @param array $fieldArray
      * @param \TYPO3\CMS\Core\DataHandling\DataHandler $tceMain
+     * @throws \TYPO3\CMS\Core\Package\Exception
      */
     public function processDatamap_postProcessFieldArray(
-        $status,
-        $table,
-        $id,
-        &$fieldArray,
+        string $status,
+        string $table,
+        int $id,
+        array &$fieldArray,
         \TYPO3\CMS\Core\DataHandling\DataHandler &$tceMain
     ) {
         if ($table === Constants::TABLE_LOCALIZER_SETTINGS) {
@@ -82,7 +82,7 @@ class DataHandler
     /**
      * @return bool
      */
-    protected function isSaveAction()
+    protected function isSaveAction(): bool
     {
         return
             isset($_REQUEST['doSave']) && (bool)$_REQUEST['doSave'];

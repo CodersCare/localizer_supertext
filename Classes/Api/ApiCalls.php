@@ -2,6 +2,7 @@
 
 namespace Localizationteam\LocalizerSupertext\Api;
 
+use Exception;
 use Localizationteam\Localizer\Constants;
 use PDO;
 use TYPO3\CMS\Core\Crypto\PasswordHashing\Md5PasswordHash;
@@ -9,6 +10,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Http\Response;
+use TYPO3\CMS\Core\Utility\DebugUtility;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\VersionNumberUtility;
@@ -39,21 +41,23 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     protected $communicationLanguage = 'de-CH';
 
     /**
-     * @param int $type
+     * @param string $type
      * @param string $url
      * @param string $workflow
      * @param string $projectKey
      * @param string $username
      * @param string $password
+     * @param string $uid
+     * @throws \TYPO3\CMS\Core\Package\Exception
      */
     public function __construct(
-        $type,
-        $url = '',
-        $workflow = '',
-        $projectKey = '',
-        $username = '',
-        $password = '',
-        $uid = ''
+        string $type,
+        string $url = '',
+        string $workflow = '',
+        string $projectKey = '',
+        string $username = '',
+        string $password = '',
+        string $uid = ''
     ) {
         parent::__construct($type);
         $this->connectorName = 'Localizer Supertext Connector';
@@ -73,9 +77,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      *
      * @param bool $closeConnectionAfterCheck
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
-    public function areSettingsValid($closeConnectionAfterCheck = true)
+    public function areSettingsValid(bool $closeConnectionAfterCheck = true): bool
     {
         if ($this->isConnected()) {
             $this->disconnect();
@@ -93,9 +97,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Checks if the token is set
      *
-     * @return boolean True if the token is a non empty string, false otherwise
+     * @return bool True if the token is a non empty string, false otherwise
      */
-    public function isConnected()
+    public function isConnected(): bool
     {
         return !empty($this->token);
     }
@@ -112,10 +116,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Tries to connect to the Supertext-Server using the plugin parameters
      *
-     * @return boolean true if the connection is successful, false otherwise
-     * @throws \Exception This Exception contains details of an eventual error
+     * @return bool true if the connection is successful, false otherwise
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function connect()
+    public function connect(): bool
     {
         if ($this->doesLocalizerExist()) {
             $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
@@ -138,7 +142,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             }
             return $this->isConnected();
         } else {
-            throw new \Exception(
+            throw new Exception(
                 'No Supertext-Server found at given URL ' . $this->url . '. Either the URL is wrong or Supertext-Server is not active!'
             );
         }
@@ -147,7 +151,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * @return bool
      */
-    public function doesLocalizerExist()
+    public function doesLocalizerExist(): bool
     {
         $doesExist = false;
         $response = file_get_contents($this->url . '/v1/servertest');
@@ -159,12 +163,12 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     }
 
     /**
-     * @param resource $curl
+     * @param mixed $curl
      * @param string $content
      * @param string $methodName
-     * @throws \Exception
+     * @throws Exception
      */
-    private function checkResponse($curl, $content, $methodName = '')
+    private function checkResponse($curl, string $content, string $methodName = '')
     {
         $http_status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $this->lastError = '';
@@ -180,7 +184,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
             $this->lastError = $content;
 
-            throw new \Exception(
+            throw new Exception(
                 'Communication error with the Supertext-Server, see the details : (' . var_export(
                     $details,
                     true
@@ -200,16 +204,16 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
     /**
      * @param string $sourceLanguage
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setSourceLanguage($sourceLanguage)
+    public function setSourceLanguage(string $sourceLanguage)
     {
         if ($sourceLanguage !== '') {
             $projectLanguages = $this->getProjectLanguages();
             if (isset($projectLanguages[$sourceLanguage])) {
                 $this->sourceLanguage = $sourceLanguage;
             } else {
-                throw new \Exception(
+                throw new Exception(
                     'Source language ' . $sourceLanguage . ' not specified for this project ' .
                     $this->projectKey . '. Allowed ' . join(' ', array_keys($projectLanguages))
                 );
@@ -224,9 +228,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      * @return array the language pairs available in the Supertext-Server project like 'source' => 'target1' => 1
      *                                                                                   'target2' => 1
      *                                                                                   'targetX' => 1
-     * @throws \Exception This Exception contains details of an eventual error
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function getProjectLanguages()
+    public function getProjectLanguages(): array
     {
         if ($this->projectLanguages === null) {
             $array = $this->getProjectInformation();
@@ -244,9 +248,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * @param bool $asJson
      * @return string|array
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getProjectInformation($asJson = false)
+    public function getProjectInformation(bool $asJson = false)
     {
         if ($this->projectInformation === null) {
             if (!$this->isConnected()) {
@@ -312,7 +316,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      * If translated files are found, these will be aligned with the source file for the purpose of pretranslation.
      *
      * @param array $align
-     * @throws \Exception
+     * @throws Exception
      */
     public function setAlign(array $align)
     {
@@ -322,9 +326,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * @param array $locales
      * @return array validated locales should be same as input otherwise an exception will be thrown
-     * @throws \Exception
+     * @throws Exception
      */
-    private function validateTargetLocales(array $locales)
+    private function validateTargetLocales(array $locales): array
     {
         $validateLocales = [];
         $sourceLanguage = $this->getSourceLanguage();
@@ -333,7 +337,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if (isset($projectLanguages[$sourceLanguage][$locale])) {
                 $validateLocales[] = $locale;
             } else {
-                throw new \Exception(
+                throw new Exception(
                     $locale . ' not defined for this project ' . $this->projectKey
                     . '. Available locales ' . join(' ', array_keys($projectLanguages[$sourceLanguage]))
                 );
@@ -348,9 +352,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      * Will throw an exception if there are more so the source ha to be set
      *
      * @return string the source language
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getSourceLanguage()
+    public function getSourceLanguage(): string
     {
         if ($this->sourceLanguage === '') {
             $projectLanguages = $this->getProjectLanguages();
@@ -358,7 +362,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if (count($sourceLanguages) === 1) {
                 $this->sourceLanguage = $sourceLanguages[0];
             } else {
-                throw new \Exception(
+                throw new Exception(
                     'For this project ' . $this->projectKey
                     . ' is more than one source language available. Please specify ' . join(' ', $sourceLanguages)
                 );
@@ -373,9 +377,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      *
      * @param String $filename Name of the file you wish to delete
      * @param String $source source language of the file
-     * @throws \Exception This Exception contains details of an eventual error
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function deleteFile($filename, $source)
+    public function deleteFile(string $filename, string $source)
     {
         if (!$this->isConnected()) {
             $this->connect();
@@ -399,16 +403,17 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Retrieves work progress of the Supertext-Server for the specified files
      *
-     * @param mixed $files Can be an array containing a list of file-names or false if you do no want to filter
+     * @param mixed $files Can be an array containing a list of file-names or false if you do not want to filter
      * (false by default)
+     * @param string $target
      * @param int $skip Optional number, default is 0. Used for pagination. The files to skip.
      * @param int $count Optional number, default is 100. Used for pagination and indicates the total number of files
      *                   to return from this call. Make sure to specify a limit corresponding to your page
      *                   size (e.g. 100).
      * @return array corresponding to the json returned by the Supertext-Server API
-     * @throws \Exception This Exception contains details of an eventual error
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function getWorkProgress($files = false, $skip = null, $count = null)
+    public function getWorkProgress($files = false, string $target = '', int $skip = 0, int $count = 100): array
     {
         $response = [];
 
@@ -451,6 +456,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if ($request->getStatusCode() === 200) {
                 $content = json_decode($request->getBody(), true);
                 if ($content['Status'] === 'Delivered') {
+                    $finalFile = '';
                     if ($content['Files']) {
                         foreach ($content['Files'] as $file) {
                             if ($file['DocumentType'] === 'Final') {
@@ -473,12 +479,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Downloads the specified file
      *
-     * @param String $filename Name of the file you wish to retrieve
-     * @param String $folder Name of the folder where the file is located (usually the target language)
+     * @param String $path Path of the file you wish to retrieve
      * @return String The content of the file
-     * @throws \Exception This Exception contains details of an eventual error
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function getFile($filename, $folder)
+    public function getFile(string $path): string
     {
         if (!$this->isConnected()) {
             $this->connect();
@@ -486,8 +491,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         $content = '';
 
-        $folder = GeneralUtility::trimExplode('\\', $folder);
+        $folder = GeneralUtility::trimExplode('\\', dirname($path));
         $folder = $folder[1];
+        $filename = basename($path);
 
         if (!empty($filename) && !empty($folder)) {
             /** @var $requestFactory RequestFactory **/
@@ -516,7 +522,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Tells the Supertext-Server to scan its files
      *
-     * @throws \Exception This Exception contains details of an eventual error
+     * @throws Exception This Exception contains details of an eventual error
      */
     public function scanFiles()
     {
@@ -541,10 +547,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Asks to the Supertext-Server if a scan is required
      *
-     * @return boolean True if a scan is required, false otherwise
-     * @throws \Exception This Exception contains details of an eventual error
+     * @return bool True if a scan is required, false otherwise
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function scanRequired()
+    public function scanRequired(): bool
     {
         if (!$this->isConnected()) {
             $this->connect();
@@ -566,43 +572,8 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         if (is_array($array) && isset($array['scanRequired'])) {
             return (boolean)$array['scanRequired'];
         } else {
-            throw new \Exception('unexpected result from: scan required');
+            throw new Exception('unexpected result from: scan required');
         }
-    }
-
-    /**
-     * This method empties the sandbox.
-     *
-     * If you organise your files in sub directories such as in "folder1000\file1.dox", etc. you may selectively empty
-     * the sandbox by folder ("directory name" set to "folder1000").
-     *
-     * @param string $directoryName
-     * @throws \Exception
-     */
-    public function sandboxClear($directoryName = '')
-    {
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-
-        $curl = curl_init();
-        $url = $this->url .
-            '/api/files/directory?token=' . urlencode($this->token) .
-            '&locale=sandbox';
-
-        if ($directoryName !== '') {
-            $url .= '&directoryname=' . urlencode((string)$directoryName);
-        }
-
-        curl_setopt(
-            $curl,
-            CURLOPT_URL,
-            $url
-        );
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-        $content = curl_exec($curl);
-
-        $this->checkResponse($curl, $content, 'sandBoxClear');
     }
 
     /**
@@ -612,9 +583,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      * @param String $fileName Name the file will have in the Supertext-Server
      * @param string $source Source language of the file
      * @param bool $attachInstruction
-     * @throws \Exception This Exception contains details of an eventual error
+     * @throws Exception This Exception contains details of an eventual error
      */
-    public function sendFile($fileContent, $fileName, $source, $attachInstruction = true)
+    public function sendFile(string $fileContent, string $fileName, string $source, bool $attachInstruction = true)
     {
         if (!$this->isConnected()) {
             $this->connect();
@@ -703,115 +674,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                         ->execute();
                 }
             }
-        }
-    }
-
-    /**
-     * (GET) /api/async/operation/status?token=&opid=
-     *
-     * @param string $operationId
-     */
-
-    /**
-     *
-     * Request counts/cost
-     *
-     * (@see http://documents.wordbee.com/display/bb/API+-+Sandbox+-+Counts+and+cost
-     *
-     * @param bool $includeCost
-     * @return string returns a JSON object with property “op id” and which identifies the asynchronous operation
-     * @throws \Exception
-     */
-    public function sandboxRequestCostAndCounts($includeCost = false)
-    {
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(
-            $curl,
-            CURLOPT_URL,
-            $this->url .
-            '/api/files/operations/sandbox/count?token=' . urlencode($this->token) .
-            '&getcost=' . ($includeCost === true ? 'true' : 'false')
-        );
-        curl_setopt($curl, CURLOPT_PUT, 1);
-        $operationId = curl_exec($curl);
-
-        $this->checkResponse($curl, $operationId, 'sandboxRequestCostAndCounts');
-
-
-        return $operationId;
-    }
-
-    /**
-     * @param $operationId
-     * @return string JSON string
-     * @throws \Exception
-     * @see http://documents.wordbee.com/display/bb/API+-+Sandbox+-+Counts+and+cost Returns
-     */
-    public function sandboxGetAsynchronousCostAndCountsResult($operationId)
-    {
-        if (!$this->isConnected()) {
-            $this->connect();
-        }
-
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(
-            $curl,
-            CURLOPT_URL,
-            $this->url .
-            '/api/async/operation/status?token=' . urlencode($this->token) .
-            '&opid=' . $operationId
-        );
-        $content = curl_exec($curl);
-
-        $this->checkResponse($curl, $content, 'sandboxGetAsynchronousCostAndCountsResult');
-
-        return $content;
-    }
-
-    /**
-     * This method copies all sandbox content for regular translation.
-     * This is equivalent to sending all the source content one by one to the Supertext-Server using the regular method.
-     */
-    public function sandboxCommitContent()
-    {
-        if ($this->isAlignSet()) {
-            throw new \Exception(
-                'Sandbox alignment limitation. ' .
-                'Clear the sandbox and copy source content, instructions and translated content again to the Supertext-Server. ' .
-                'For further information read http://documents.wordbee.com/display/bb/API+-+Sandbox+-+Commit+content'
-            );
-        } else {
-            if (!$this->isConnected()) {
-                $this->connect();
-            }
-            $content = [
-                'token' => $this->token,
-                'locale1' => 'sandbox',
-                'locale2' => $this->getSourceLanguage(),
-            ];
-            $json = json_encode($content);
-
-            $curl = curl_init();
-            curl_setopt(
-                $curl,
-                CURLOPT_URL,
-                $this->url .
-                '/api/files/copy'
-            );
-
-            curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
-            $content = curl_exec($curl);
-
-            $this->checkResponse($curl, $content, 'sandboxCommitContent');
         }
     }
 
