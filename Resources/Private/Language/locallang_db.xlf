@@ -9,6 +9,9 @@
 			<trans-unit id="tx_localizer_settings.type.I.localizer_supertext">
 				<source>External Server with Supertext-API</source>
 			</trans-unit>
+			<trans-unit id="tx_localizer_settings.password">
+				<source> Translation Server API Token</source>
+			</trans-unit>
 		</body>
     </file>
 </xliff>

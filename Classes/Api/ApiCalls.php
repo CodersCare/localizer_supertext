@@ -65,7 +65,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         $this->uid = (int)$uid;
         $this->setUrl($url);
         $this->setWorkflow($workflow);
-        $this->setProjectKey($projectKey);
         $this->setUsername($username);
         $this->setPassword($password);
     }
@@ -129,7 +128,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 [
                     'headers' => [
                         'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                         'Content-Type' => 'text/json',
                     ]
                 ]
@@ -137,7 +136,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             if ($request->getStatusCode() === 200) {
                 $content = json_decode($request->getBody(), true);
                 if ($content) {
-                    $this->setToken($this->projectKey);
+                    $this->setToken($this->password);
                 }
             }
             return $this->isConnected();
@@ -214,8 +213,8 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $this->sourceLanguage = $sourceLanguage;
             } else {
                 throw new Exception(
-                    'Source language ' . $sourceLanguage . ' not specified for this project ' .
-                    $this->projectKey . '. Allowed ' . join(' ', array_keys($projectLanguages))
+                    'Source language ' . $sourceLanguage . ' not specified for this project. ' .
+                    'Allowed ' . join(' ', array_keys($projectLanguages))
                 );
             }
         }
@@ -264,11 +263,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 [
                     'headers' => [
                         'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                         'Content-Type' => 'text/json',
                     ],
                     'api_username' => $this->username,
-                    'api_token' => $this->projectKey
+                    'api_token' => $this->password
                 ]
             );
             if ($request->getStatusCode() === 200) {
@@ -291,11 +290,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             [
                 'headers' => [
                     'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                    'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                    'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                     'Content-Type' => 'text/json',
                 ],
                 'api_username' => $this->username,
-                'api_token' => $this->projectKey
+                'api_token' => $this->password
             ]
         );
         if ($request->getStatusCode() === 200) {
@@ -338,8 +337,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $validateLocales[] = $locale;
             } else {
                 throw new Exception(
-                    $locale . ' not defined for this project ' . $this->projectKey
-                    . '. Available locales ' . join(' ', array_keys($projectLanguages[$sourceLanguage]))
+                    $locale . ' not defined for this project. Available locales ' . join(' ', array_keys($projectLanguages[$sourceLanguage]))
                 );
             }
         }
@@ -363,8 +361,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $this->sourceLanguage = $sourceLanguages[0];
             } else {
                 throw new Exception(
-                    'For this project ' . $this->projectKey
-                    . ' is more than one source language available. Please specify ' . join(' ', $sourceLanguages)
+                    'For this project there is more than one source language available. Please specify ' . join(' ', $sourceLanguages)
                 );
             }
         }
@@ -446,11 +443,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 [
                     'headers' => [
                         'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                         'Content-Type' => 'text/json',
                     ],
                     'api_username' => $this->username,
-                    'api_token' => $this->projectKey
+                    'api_token' => $this->password
                 ]
             );
             if ($request->getStatusCode() === 200) {
@@ -505,11 +502,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 [
                     'headers' => [
                         'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                         'Content-Type' => 'text/json',
                     ],
                     'api_username' => $this->username,
-                    'api_token' => $this->projectKey
+                    'api_token' => $this->password
                 ]
             );
             if ($fileRequest->getStatusCode() === 200) {
@@ -607,7 +604,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             [
                 'headers' => [
                     'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                    'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                    'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                 ],
                 'multipart' => [
                     [
@@ -654,7 +651,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                     [
                         'headers' => [
                             'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
-                            'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->projectKey),
+                            'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                             'Content-Type' => 'text/json',
                         ],
                         'body' => json_encode($options)
