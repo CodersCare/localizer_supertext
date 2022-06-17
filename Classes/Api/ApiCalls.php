@@ -10,7 +10,6 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Http\Response;
-use TYPO3\CMS\Core\Utility\DebugUtility;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\VersionNumberUtility;
@@ -476,11 +475,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Downloads the specified file
      *
-     * @param String $path Path of the file you wish to retrieve
+     * @param array $file Information about the file you wish to retrieve
      * @return String The content of the file
      * @throws Exception This Exception contains details of an eventual error
      */
-    public function getFile(string $path): string
+    public function getFile(array $file): string
     {
         if (!$this->isConnected()) {
             $this->connect();
@@ -488,9 +487,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 
         $content = '';
 
-        $folder = GeneralUtility::trimExplode('\\', dirname($path));
+        $folder = GeneralUtility::trimExplode('\\', dirname($file['remote']));
         $folder = $folder[1];
-        $filename = basename($path);
+        $filename = basename($file['remoteFilename']);
 
         if (!empty($filename) && !empty($folder)) {
             /** @var $requestFactory RequestFactory **/
@@ -674,4 +673,50 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         }
     }
 
+    public function reportSuccess($files = false, string $target = '') {
+        $response = [];
+
+        if (!$this->isConnected()) {
+            $this->connect();
+        }
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
+
+        $deletedRestriction = GeneralUtility::makeInstance(DeletedRestriction::class);
+
+        $queryBuilder->getRestrictions()
+            ->removeAll()
+            ->add($deletedRestriction);
+
+        $cart = $queryBuilder->select('*')
+            ->from(CONSTANTS::TABLE_EXPORTDATA_MM)
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($this->uid, PDO::PARAM_INT))
+            )
+            ->setMaxResults(1)
+            ->execute()
+            ->fetch();
+
+        if (!empty($cart) && !empty($cart['supertextid'])) {
+            $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+            $request = $requestFactory->request(
+                $this->url . '/v1/order/status/' . $cart['supertextid'] . '/9',
+                'PUT',
+                [
+                    'headers' => [
+                        'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
+                        'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
+                        'Content-Type' => 'application/json'
+                    ]
+                ]
+            );
+            if ($request->getStatusCode() === 200) {
+                $response = [
+                    'http_status_code' => 200,
+                    'status' => Constants::STATUS_CART_SUCCESS_REPORTED
+                ];
+            }
+        }
+        return $response;
+    }
 }
