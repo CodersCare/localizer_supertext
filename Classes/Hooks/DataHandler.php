@@ -26,7 +26,7 @@ class DataHandler
      *
      * @param string $status
      * @param string $table
-     * @param int $id
+     * @param mixed $id
      * @param array $fieldArray
      * @param \TYPO3\CMS\Core\DataHandling\DataHandler $tceMain
      * @throws \TYPO3\CMS\Core\Package\Exception
@@ -34,7 +34,7 @@ class DataHandler
     public function processDatamap_postProcessFieldArray(
         string $status,
         string $table,
-        int $id,
+        $id,
         array &$fieldArray,
         \TYPO3\CMS\Core\DataHandling\DataHandler &$tceMain
     ) {
