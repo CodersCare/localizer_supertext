@@ -451,6 +451,13 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             );
             if ($request->getStatusCode() === 200) {
                 $content = json_decode($request->getBody(), true);
+                if ($content['Status'] === 'New') {
+                    $response['files'] = [
+                        [
+                            'status' => Constants::API_TRANSLATION_STATUS_IN_PROGRESS
+                        ],
+                    ];
+                }
                 if ($content['Status'] === 'Delivered') {
                     $finalFile = '';
                     if ($content['Files']) {
