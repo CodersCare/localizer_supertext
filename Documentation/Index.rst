@@ -30,11 +30,9 @@ Localizer
    `CC BY-NC-SA 4.0 <https://creativecommons.org/licenses/by-nc-sa/4.0/>`__ (Creative Commons)
    license
 
-The Localizer Supertext plugin provides an additional connector for the basic Localizer extension.
-The Localizer provides a fully automated workflow and a graphical user interface for the well known Localization Manager (l10nmgr).
-While the L10nmgr still provides exports and imports of records and files, the Localizer will take care of all the necessary steps in between.
-Editors responsible for translations won't have to deal with any L10nmgr configurations anymore and as an administrator you create just one configuration per Localizer Projec.
-With the Supertext Localizer plugin you can now add a connector to the Supertext translation API.
+The Supertext Localizer Translation plugin allows you to create and manage professional translation projects of your site right out of the TYPO3 user interface.
+Supertext is one of the worlds leading language service providers (LSP) and provides high-quality translations into more than 100 languages. For more information visit https://www.supertext.com
+The plugin is built using the well known combination of the TYPO3 extensions Localization Manager (L10mgr) and its GUI, the Localizer. While the L10mgr provides exports and imports of records and files, the Localizer with the Supertext Translation plugin takes care of all the necessary steps in between. Editors won’t have to deal with any L10mgr configurations anymore and can order, review and publish translated sites all within their familiar TYPO3 environment.
 
 **TYPO3**
 
@@ -44,7 +42,7 @@ With the Supertext Localizer plugin you can now add a connector to the Supertext
 
 **Community Documentation:**
 
-   This documentation is community documentation for the TYPO3 extension Localizer.
+   This documentation is community documentation for the TYPO3 extension localizer_supertext.
 
    It is maintained as part of this third party extension.
 
@@ -53,7 +51,7 @@ With the Supertext Localizer plugin you can now add a connector to the Supertext
 
 **Extension Manual**
 
-   This documentation is for the TYPO3 extension localizer.
+   This documentation is for the TYPO3 extension localizer_supertext.
 
 
 **Sitemap:**
