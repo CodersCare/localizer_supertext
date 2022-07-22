@@ -18,9 +18,6 @@ use TYPO3\CMS\Core\Utility\VersionNumberUtility;
  * ApiCalls Class used to make calls to the Localizer API
  *
  * @author      Peter Russ<peter.russ@4many.net>, Jo Hasenau<jh@cybercraft.de>
- * @package     TYPO3
- * @subpackage  localizer
- *
  */
 class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
 {
@@ -129,7 +126,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                         'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
                         'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                         'Content-Type' => 'text/json',
-                    ]
+                    ],
                 ]
             );
             if ($request->getStatusCode() === 200) {
@@ -139,11 +136,10 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 }
             }
             return $this->isConnected();
-        } else {
-            throw new Exception(
-                'No Supertext-Server found at given URL ' . $this->url . '. Either the URL is wrong or Supertext-Server is not active!'
-            );
         }
+        throw new Exception(
+            'No Supertext-Server found at given URL ' . $this->url . '. Either the URL is wrong or Supertext-Server is not active!'
+        );
     }
 
     /**
@@ -213,7 +209,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             } else {
                 throw new Exception(
                     'Source language ' . $sourceLanguage . ' not specified for this project. ' .
-                    'Allowed ' . join(' ', array_keys($projectLanguages))
+                    'Allowed ' . implode(' ', array_keys($projectLanguages))
                 );
             }
         }
@@ -266,7 +262,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                         'Content-Type' => 'text/json',
                     ],
                     'api_username' => $this->username,
-                    'api_token' => $this->password
+                    'api_token' => $this->password,
                 ]
             );
             if ($request->getStatusCode() === 200) {
@@ -293,7 +289,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                     'Content-Type' => 'text/json',
                 ],
                 'api_username' => $this->username,
-                'api_token' => $this->password
+                'api_token' => $this->password,
             ]
         );
         if ($request->getStatusCode() === 200) {
@@ -309,7 +305,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     }
 
     /**
-     *
      * Instructs the Supertext-Server to look for translated files in the Supertext-Server "out" directory.
      * If translated files are found, these will be aligned with the source file for the purpose of pretranslation.
      *
@@ -336,7 +331,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $validateLocales[] = $locale;
             } else {
                 throw new Exception(
-                    $locale . ' not defined for this project. Available locales ' . join(' ', array_keys($projectLanguages[$sourceLanguage]))
+                    $locale . ' not defined for this project. Available locales ' . implode(' ', array_keys($projectLanguages[$sourceLanguage]))
                 );
             }
         }
@@ -360,7 +355,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $this->sourceLanguage = $sourceLanguages[0];
             } else {
                 throw new Exception(
-                    'For this project there is more than one source language available. Please specify ' . join(' ', $sourceLanguages)
+                    'For this project there is more than one source language available. Please specify ' . implode(' ', $sourceLanguages)
                 );
             }
         }
@@ -371,8 +366,8 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
     /**
      * Deletes the specified file in the Supertext-Server
      *
-     * @param String $filename Name of the file you wish to delete
-     * @param String $source source language of the file
+     * @param string $filename Name of the file you wish to delete
+     * @param string $source source language of the file
      * @throws Exception This Exception contains details of an eventual error
      */
     public function deleteFile(string $filename, string $source)
@@ -390,7 +385,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             '&locale=' . $source . '&filename=' . urlencode($filename) .
             '&folder='
         );
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
         $content = curl_exec($curl);
 
         $this->checkResponse($curl, $content, 'deleteFile');
@@ -446,7 +441,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                         'Content-Type' => 'text/json',
                     ],
                     'api_username' => $this->username,
-                    'api_token' => $this->password
+                    'api_token' => $this->password,
                 ]
             );
             if ($request->getStatusCode() === 200) {
@@ -454,7 +449,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 if ($content['Status'] === 'New') {
                     $response['files'] = [
                         [
-                            'status' => Constants::API_TRANSLATION_STATUS_IN_PROGRESS
+                            'status' => Constants::API_TRANSLATION_STATUS_IN_PROGRESS,
                         ],
                     ];
                 }
@@ -483,7 +478,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
      * Downloads the specified file
      *
      * @param array $file Information about the file you wish to retrieve
-     * @return String The content of the file
+     * @return string The content of the file
      * @throws Exception This Exception contains details of an eventual error
      */
     public function getFile(array $file): string
@@ -512,11 +507,11 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                         'Content-Type' => 'text/json',
                     ],
                     'api_username' => $this->username,
-                    'api_token' => $this->password
+                    'api_token' => $this->password,
                 ]
             );
             if ($fileRequest->getStatusCode() === 200) {
-                $content = (string) $fileRequest->getBody();
+                $content = (string)$fileRequest->getBody();
             }
         }
         return $content;
@@ -574,16 +569,15 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         $array = json_decode($content, true);
         if (is_array($array) && isset($array['scanRequired'])) {
             return (boolean)$array['scanRequired'];
-        } else {
-            throw new Exception('unexpected result from: scan required');
         }
+        throw new Exception('unexpected result from: scan required');
     }
 
     /**
      * Sends 1 file to the Supertext-Server 'in' folder
      *
-     * @param String $fileContent The content of the file you wish to send
-     * @param String $fileName Name the file will have in the Supertext-Server
+     * @param string $fileContent The content of the file you wish to send
+     * @param string $fileName Name the file will have in the Supertext-Server
      * @param string $source Source language of the file
      * @param bool $attachInstruction
      * @throws Exception This Exception contains details of an eventual error
@@ -621,8 +615,8 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                     ],
                     [ 'name' => 'ElementId', 'contents' => 0 ],
                     [ 'name' => 'ElementTypeId', 'contents' => 2],
-                    [ 'name' => 'DocumentTypeId', 'contents' => 1]
-                ]
+                    [ 'name' => 'DocumentTypeId', 'contents' => 1],
+                ],
             ]
         );
         if ($fileRequest->getStatusCode() === 200) {
@@ -647,9 +641,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                     'Files' => [
                         [
                             'Id' => $fileId,
-                            'Comment' => 'Comment'
-                        ]
-                    ]
+                            'Comment' => 'Comment',
+                        ],
+                    ],
                 ];
                 $orderRequest = $orderRequestFactory->request(
                     $this->url . '/v1.1/translation/order',
@@ -660,7 +654,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                             'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
                             'Content-Type' => 'text/json',
                         ],
-                        'body' => json_encode($options)
+                        'body' => json_encode($options),
                     ]
                 );
                 $orderContent = json_decode($orderRequest->getBody(), true)[0];
@@ -680,7 +674,8 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         }
     }
 
-    public function reportSuccess($files = false, string $target = '') {
+    public function reportSuccess($files = false, string $target = '')
+    {
         $response = [];
 
         if (!$this->isConnected()) {
@@ -713,14 +708,14 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                     'headers' => [
                         'User-Agent' => 'TYPO3 localizer_supertext 9.0.0',
                         'Authorization' => 'Basic ' . base64_encode($this->username . ':' . $this->password),
-                        'Content-Type' => 'application/json'
-                    ]
+                        'Content-Type' => 'application/json',
+                    ],
                 ]
             );
             if ($request->getStatusCode() === 200) {
                 $response = [
                     'http_status_code' => 200,
-                    'status' => Constants::STATUS_CART_SUCCESS_REPORTED
+                    'status' => Constants::STATUS_CART_SUCCESS_REPORTED,
                 ];
             }
         }
