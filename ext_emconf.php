@@ -10,7 +10,7 @@ $EM_CONF['localizer_supertext'] = [
     'constraints' => [
         'depends' => [
             'typo3' => '10.4.0-10.4.99',
-            'localizer' => '10.0.0-0.0.0',
+            'localizer' => '10.4.6-0.0.0',
         ],
         'conflicts' => [
         ],
@@ -27,5 +27,5 @@ $EM_CONF['localizer_supertext'] = [
     'author' => 'Jo Hasenau',
     'author_email' => 'info@cybercraft.de',
     'author_company' => 'Cybercraft GmbH',
-    'version' => '10.0.0',
+    'version' => '10.1.0',
 ];
