@@ -1,7 +1,7 @@
 {
     "name": "localizationteam/localizer-supertext",
     "type": "typo3-cms-extension",
-    "description": "Supertext API for the TYPO3 localizer",
+    "description": "Supertext API for the TYPO3 Localizer",
     "homepage": "https://cybercraft.gmbh",
     "license": ["GPL-2.0-or-later"],
     "keywords": ["TYPO3 CMS"],

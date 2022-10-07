@@ -99,9 +99,6 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         return !empty($this->token);
     }
 
-    /**
-     * @return void
-     */
     public function disconnect()
     {
         if (!$this->isConnected()) {
