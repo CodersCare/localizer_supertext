@@ -6,6 +6,7 @@ use Localizationteam\Localizer\Constants;
 use Localizationteam\Localizer\Language;
 use Localizationteam\LocalizerSupertext\Api\ApiCalls;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Package\Exception;
 
 /**
  * DataHandler $COMMENT$
@@ -26,7 +27,7 @@ class DataHandler
      * @param mixed $id
      * @param array $fieldArray
      * @param \TYPO3\CMS\Core\DataHandling\DataHandler $tceMain
-     * @throws \TYPO3\CMS\Core\Package\Exception
+     * @throws Exception
      */
     public function processDatamap_postProcessFieldArray(
         string $status,
@@ -39,7 +40,14 @@ class DataHandler
             if ($this->isSaveAction()) {
                 $currentRecord = $tceMain->recordInfo($table, $id, '*');
                 if ($currentRecord === null) {
-                    $currentRecord = [];
+                    $currentRecord = [
+                        'type' => '',
+                        'url' => '',
+                        'workflow' => '',
+                        'projectkey' => '',
+                        'username' => '',
+                        'password' => '',
+                    ];
                 }
                 $checkArray = array_merge($currentRecord, $fieldArray);
                 if ($checkArray['type'] === 'localizer_supertext') {
@@ -85,6 +93,6 @@ class DataHandler
     protected function isSaveAction(): bool
     {
         return
-            isset($_REQUEST['doSave']) && (bool)$_REQUEST['doSave'];
+            isset($_REQUEST['doSave']) && $_REQUEST['doSave'];
     }
 }

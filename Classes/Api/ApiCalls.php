@@ -99,6 +99,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         return !empty($this->token);
     }
 
+    /**
+     * @return void
+     */
     public function disconnect()
     {
         if (!$this->isConnected()) {
@@ -230,7 +233,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $array = $this->getProjectInformation();
             $target = [];
             if (is_array($array['targetLocales'])) {
-                foreach ($array['targetLocales'] as $num => $targetLocale) {
+                foreach ($array['targetLocales'] as $targetLocale) {
                     $target[$targetLocale] = 1;
                 }
                 $this->projectLanguages[$array['sourceLocale']] = $target;
@@ -412,7 +415,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $this->connect();
         }
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
+            ->getQueryBuilderForTable(Constants::TABLE_EXPORTDATA_MM);
 
         $deletedRestriction = GeneralUtility::makeInstance(DeletedRestriction::class);
 
@@ -421,7 +424,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             ->add($deletedRestriction);
 
         $cart = $queryBuilder->select('*')
-            ->from(CONSTANTS::TABLE_EXPORTDATA_MM)
+            ->from(Constants::TABLE_EXPORTDATA_MM)
             ->where(
                 $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($this->uid, PDO::PARAM_INT))
             )
@@ -494,9 +497,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         $filename = basename($file['remoteFilename']);
 
         if (!empty($filename) && !empty($folder)) {
-            /** @var $requestFactory RequestFactory **/
+            /** @var RequestFactory $requestFactory **/
             $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
-            /** @var $fileRequest Response **/
+            /** @var Response $fileRequest **/
             $fileRequest = $requestFactory->request(
                 str_replace('/api', '', $this->url) . '/FileDownloads/File/' . $folder . '/' . $filename,
                 'GET',
@@ -660,9 +663,9 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
                 $orderContent = json_decode($orderRequest->getBody(), true)[0];
                 $orderId = (int)$orderContent['Id'];
                 if ($orderId > 0 && $orderContent['ReferenceData'] === $referenceData) {
-                    $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
+                    $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(Constants::TABLE_EXPORTDATA_MM);
                     $queryBuilder
-                        ->update(CONSTANTS::TABLE_EXPORTDATA_MM, 'export')
+                        ->update(Constants::TABLE_EXPORTDATA_MM, 'export')
                         ->where(
                             $queryBuilder->expr()->eq('export.uid', $queryBuilder->createNamedParameter($this->uid))
                         )
@@ -674,6 +677,12 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
         }
     }
 
+    /**
+     * @param $files
+     * @param string $target
+     * @return array
+     * @throws Exception
+     */
     public function reportSuccess($files = false, string $target = '')
     {
         $response = [];
@@ -682,7 +691,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             $this->connect();
         }
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable(CONSTANTS::TABLE_EXPORTDATA_MM);
+            ->getQueryBuilderForTable(Constants::TABLE_EXPORTDATA_MM);
 
         $deletedRestriction = GeneralUtility::makeInstance(DeletedRestriction::class);
 
@@ -691,7 +700,7 @@ class ApiCalls extends \Localizationteam\Localizer\Api\ApiCalls
             ->add($deletedRestriction);
 
         $cart = $queryBuilder->select('*')
-            ->from(CONSTANTS::TABLE_EXPORTDATA_MM)
+            ->from(Constants::TABLE_EXPORTDATA_MM)
             ->where(
                 $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($this->uid, PDO::PARAM_INT))
             )

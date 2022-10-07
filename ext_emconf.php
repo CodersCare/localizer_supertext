@@ -27,5 +27,5 @@ $EM_CONF['localizer_supertext'] = [
     'author' => 'Jo Hasenau',
     'author_email' => 'info@cybercraft.de',
     'author_company' => 'Cybercraft GmbH',
-    'version' => '10.1.0',
+    'version' => '10.2.0',
 ];
