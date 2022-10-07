@@ -1,14 +1,14 @@
 {
     "name": "localizationteam/localizer-supertext",
     "type": "typo3-cms-extension",
-    "description": "Supertext API for the TYPO3 localizer",
+    "description": "Supertext API for the TYPO3 Localizer",
     "homepage": "https://cybercraft.gmbh",
     "license": ["GPL-2.0-or-later"],
     "keywords": ["TYPO3 CMS"],
-    "version": "10.0.0",
+    "version": "10.2.0",
     "require": {
         "typo3/cms-core": "^10.4",
-        "localizationteam/localizer": "^10.0 || dev-master"
+        "localizationteam/localizer": "^10.4.6"
     },
     "autoload": {
         "psr-4": {
